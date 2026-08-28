@@ -13,7 +13,8 @@ for the full deployment and operations plan (in Czech) and the PRD for product s
 | `deploy/` | Production docker-compose stack used on the app servers |
 | `.github/workflows/` | CI (lint + tests) and CD (image build → GHCR → rolling SSH deploy) |
 | `codemagic.yaml` | Mobile CI: analyze, test, build for TestFlight / Play internal |
-| `docs/` | Deployment plan and other documents |
+| `render.yaml` | Free test environment blueprint (Render) — see `docs/test-environment.md` |
+| `docs/` | Deployment plan, test environment guide |
 
 ## Local development
 
@@ -40,6 +41,11 @@ Tests and lint:
 cd backend
 ruff check . && pytest
 ```
+
+## Test environment (free)
+
+API on Render + Neon Postgres, Flutter web on GitHub Pages, APK from CI
+artifacts — setup steps in `docs/test-environment.md`.
 
 ## Deployment
 

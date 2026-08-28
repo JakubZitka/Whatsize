@@ -9,6 +9,12 @@ class Settings(BaseSettings):
     env: str = "dev"
     database_url: str = "postgresql+psycopg://whatsize:whatsize@localhost:5432/whatsize"
     redis_url: str = "redis://localhost:6379/0"
+    # Comma-separated list of allowed browser origins (the Flutter web build).
+    cors_origins: str = "*"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

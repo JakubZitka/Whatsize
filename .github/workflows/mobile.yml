@@ -1,0 +1,85 @@
+name: mobile
+
+on:
+  push:
+    branches: [main]
+    paths: ["mobile/**", ".github/workflows/mobile.yml"]
+  pull_request:
+    paths: ["mobile/**", ".github/workflows/mobile.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # android/ and web/ platform folders are generated, not committed
+      # (see mobile/README.md and .gitignore).
+      - name: Generate platform folders
+        working-directory: mobile
+        run: flutter create . --org com.whatsize --platforms android,web
+
+      - name: Analyze & test
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      # Repo variable WHATSIZE_API_URL points the build at the Render API
+      # (Settings → Secrets and variables → Actions → Variables).
+      - name: Build web
+        working-directory: mobile
+        run: >
+          flutter build web --release
+          --base-href "/Whatsize/"
+          --dart-define=WHATSIZE_API_URL=${{ vars.WHATSIZE_API_URL || 'http://localhost:8000' }}
+
+      - name: Build APK
+        working-directory: mobile
+        run: >
+          flutter build apk --release
+          --dart-define=WHATSIZE_API_URL=${{ vars.WHATSIZE_API_URL || 'http://localhost:8000' }}
+
+      - name: Upload APK for testers
+        uses: actions/upload-artifact@v4
+        with:
+          name: whatsize-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload web build for Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/build/web
+
+  deploy-pages:
+    # Publishes the Flutter web build to https://jakubzitka.github.io/Whatsize/
+    # Requires: repo Settings → Pages → Source = "GitHub Actions".
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

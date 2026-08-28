@@ -1,0 +1,21 @@
+# Render blueprint — free test environment (docs/test-environment.md).
+# In the Render dashboard: New → Blueprint → connect this repo. The database
+# runs on Neon (free tier); paste its connection string when Render asks for
+# WHATSIZE_DATABASE_URL.
+services:
+  - type: web
+    name: whatsize-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt # EU — same data-residency posture as production
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: WHATSIZE_ENV
+        value: test
+      - key: WHATSIZE_DATABASE_URL
+        sync: false # set in the dashboard — Neon connection string
+      - key: WHATSIZE_CORS_ORIGINS
+        value: https://jakubzitka.github.io
