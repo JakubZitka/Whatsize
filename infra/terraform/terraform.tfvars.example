@@ -1,0 +1,7 @@
+hcloud_token   = "…"
+ssh_public_key = "ssh-ed25519 AAAA… deploy@whatsize"
+admin_ips      = ["203.0.113.10/32"]
+
+# Optional — Cloudflare origin certificate once issued:
+# tls_certificate_pem = file("origin-cert.pem")
+# tls_private_key_pem = file("origin-key.pem")

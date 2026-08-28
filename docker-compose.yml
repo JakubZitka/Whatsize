@@ -1,0 +1,42 @@
+# Local development stack. Not used in production — see deploy/docker-compose.prod.yml.
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      WHATSIZE_ENV: dev
+      WHATSIZE_DATABASE_URL: postgresql+psycopg://whatsize:whatsize@db:5432/whatsize
+      WHATSIZE_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend/app:/srv/whatsize/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: whatsize
+      POSTGRES_PASSWORD: whatsize
+      POSTGRES_DB: whatsize
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whatsize"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

@@ -1,0 +1,21 @@
+# Production stack for one app server (app-1 / app-2 behind the Hetzner LB).
+# Postgres runs on the dedicated db server, not here. Redis is a local
+# read-mostly cache per app server (see docs/deployment-plan.md §4).
+#
+# Usage on the server (as the deploy user, in /srv/whatsize):
+#   docker compose -f docker-compose.prod.yml --env-file .env pull
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d
+services:
+  api:
+    image: ghcr.io/jakubzitka/whatsize-api:${TAG:-latest}
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]

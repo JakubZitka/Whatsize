@@ -1,0 +1,42 @@
+# Mobile CI/CD (Codemagic). Signing identities are configured in the Codemagic
+# UI (App Store Connect integration + Play service account) — referenced here
+# by group name, never committed to the repo.
+workflows:
+  flutter-ci:
+    name: Flutter CI (PR)
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    triggering:
+      events: [pull_request]
+    working_directory: mobile
+    scripts:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+
+  release-internal:
+    name: Build & upload to TestFlight / Play internal
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    triggering:
+      events: [push]
+      branch_patterns:
+        - pattern: main
+    working_directory: mobile
+    environment:
+      groups:
+        - app_store_credentials   # APP_STORE_CONNECT_* variables
+        - google_play_credentials # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+    scripts:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build appbundle --release
+      - flutter build ipa --release
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
