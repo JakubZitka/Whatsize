@@ -2,7 +2,6 @@ name: mobile
 
 on:
   push:
-    branches: [main]
     paths: ["mobile/**", ".github/workflows/mobile.yml"]
   pull_request:
     paths: ["mobile/**", ".github/workflows/mobile.yml"]
@@ -64,15 +63,16 @@ jobs:
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload web build for Pages
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref_name == github.event.repository.default_branch && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: mobile/build/web
 
   deploy-pages:
     # Publishes the Flutter web build to https://jakubzitka.github.io/Whatsize/
+    # from the repo's default branch only (whatever it is named).
     # Requires: repo Settings → Pages → Source = "GitHub Actions".
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref_name == github.event.repository.default_branch && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:

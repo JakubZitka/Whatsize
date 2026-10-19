@@ -35,7 +35,7 @@ jen změna API URL.
 3. Při dotazu na `WHATSIZE_DATABASE_URL` vložte upravený Neon connection
    string z kroku 1.
 4. Po nasazení dostanete URL typu `https://whatsize-api.onrender.com` —
-   ověřte `https://…/healthz` a `https://…/docs`. Auto-deploy z `main`
+   ověřte `https://…/healthz` a `https://…/docs`. Auto-deploy z výchozí větve
    je zapnutý v blueprintu.
 
 První request po probuzení ze spánku trvá až minutu — to je vlastnost free
@@ -46,7 +46,8 @@ tieru, ne chyba. (Mobilní appka s tím počítá delším timeoutem.)
 1. V repu: **Settings → Pages → Source: „GitHub Actions"**.
 2. **Settings → Secrets and variables → Actions → Variables** → nová
    proměnná `WHATSIZE_API_URL` = URL z Renderu (bez lomítka na konci).
-3. Merge do `main` dotýkající se `mobile/` spustí workflow `mobile`,
+3. Actions → workflow **mobile** → **Run workflow** (nebo push do výchozí
+   větve, který mění `mobile/`) spustí workflow `mobile`,
    který web build nasadí na `https://jakubzitka.github.io/Whatsize/`.
    Odkaz funguje komukoli, i na telefonu.
 
