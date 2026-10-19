@@ -20,12 +20,11 @@ jen změna API URL.
 2. Zkopírujte connection string a upravte schéma pro psycopg:
    `postgres://uzivatel:heslo@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`
    → `postgresql+psycopg://uzivatel:heslo@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`
-3. Migrace se na free tieru pouštějí ručně z lokálu (Render free nemá
-   pre-deploy krok):
-   ```bash
-   cd backend
-   WHATSIZE_DATABASE_URL='postgresql+psycopg://…' alembic upgrade head
-   ```
+3. Migrace a referenční data (100 značek, tabulky velikostí) se do databáze
+   nahrají samy při startu API (`WHATSIZE_AUTO_MIGRATE=true` v `render.yaml`).
+   Nic se nespouští ručně. Kdyby databáze nebyla dostupná, API běží dál
+   z dat zabudovaných v aplikaci — stav ukazuje `https://…/readyz`
+   (`store_source`: `database` nebo `bundled`, případně `db_error`).
 
 ## 2. API — Render (~5 minut)
 

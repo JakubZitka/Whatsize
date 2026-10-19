@@ -12,7 +12,12 @@ _session_factory = None
 def get_engine():
     global _engine, _session_factory
     if _engine is None:
-        _engine = create_engine(get_settings().database_url, pool_pre_ping=True)
+        url = get_settings().database_url
+        # prepare_threshold=None: no server-side prepared statements, which
+        # transaction-mode poolers (Neon's -pooler endpoint) may not support.
+        connect_args = ({"connect_timeout": 10, "prepare_threshold": None}
+                        if url.startswith("postgresql") else {})
+        _engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
         _session_factory = sessionmaker(bind=_engine, expire_on_commit=False)
     return _engine
 

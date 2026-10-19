@@ -8,6 +8,7 @@ services:
       WHATSIZE_ENV: dev
       WHATSIZE_DATABASE_URL: postgresql+psycopg://whatsize:whatsize@db:5432/whatsize
       WHATSIZE_REDIS_URL: redis://redis:6379/0
+      WHATSIZE_AUTO_MIGRATE: "true"
     volumes:
       - ./backend/app:/srv/whatsize/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

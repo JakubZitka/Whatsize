@@ -15,6 +15,8 @@ services:
     envVars:
       - key: WHATSIZE_ENV
         value: test
+      - key: WHATSIZE_AUTO_MIGRATE # migrations + reference seed run on startup
+        value: "true"
       - key: WHATSIZE_DATABASE_URL
         sync: false # set in the dashboard — Neon connection string
       - key: WHATSIZE_CORS_ORIGINS

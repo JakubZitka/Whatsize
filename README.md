@@ -7,13 +7,14 @@ for the full deployment and operations plan (in Czech) and the PRD for product s
 
 | Path | Contents |
 |---|---|
-| `backend/` | FastAPI service: matching engine API, health endpoints, Alembic migrations |
+| `backend/` | FastAPI service: reference size graph (`app/reference`), matching engine (`app/engine`), API, Alembic migrations |
 | `mobile/` | Flutter app (run `flutter create .` inside to generate platform folders) |
 | `infra/terraform/` | Hetzner Cloud infrastructure: network, load balancer, app/db/staging servers |
 | `deploy/` | Production docker-compose stack used on the app servers |
 | `.github/workflows/` | CI (lint + tests) and CD (image build → GHCR → rolling SSH deploy) |
 | `codemagic.yaml` | Mobile CI: analyze, test, build for TestFlight / Play internal |
 | `render.yaml` | Free test environment blueprint (Render) — see `docs/test-environment.md` |
+| `data/` | Sizing data model workbook (generated from `backend/app/reference/`) |
 | `docs/` | Deployment plan, test environment guide |
 
 ## Local development
