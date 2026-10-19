@@ -18,8 +18,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -29,7 +29,9 @@ jobs:
           cache: true
 
       # android/ and web/ platform folders are generated, not committed
-      # (see mobile/README.md and .gitignore).
+      # (see mobile/README.md and .gitignore). flutter create skips files that
+      # already exist, so test/widget_test.dart must stay in the repo — otherwise
+      # the template test (referencing MyApp) is generated and analyze fails.
       - name: Generate platform folders
         working-directory: mobile
         run: flutter create . --org com.whatsize --platforms android,web
