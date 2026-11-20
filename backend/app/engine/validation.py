@@ -16,6 +16,8 @@ ABSOLUTE = {
     "waist_cm": (45, 170),
     "hip_cm": (60, 180),
     "neck_cm": (25, 60),
+    "inside_leg_cm": (50, 110),
+    "sleeve_cm": (40, 100),
     "foot_length_mm": (180, 340),
 }
 
@@ -71,6 +73,11 @@ def validate(measurements: dict, gender: str) -> dict:
         if not 0.28 <= ratio <= 0.52:
             conflict("neck_cm", "bust_chest_cm",
                      "Obvod krku neodpovídá obvodu hrudníku — zkontroluj obě hodnoty.")
+    if "inside_leg_cm" in m and "stature_cm" in m:
+        ratio = m["inside_leg_cm"] / m["stature_cm"]
+        if not 0.38 <= ratio <= 0.52:
+            conflict("inside_leg_cm", "stature_cm",
+                     "Vnitřní délka nohy neodpovídá výšce — měř od rozkroku k zemi, bez bot.")
     if "foot_length_mm" in m and "stature_cm" in m:
         ratio = m["foot_length_mm"] / 10 / m["stature_cm"]
         if not 0.12 <= ratio <= 0.18:

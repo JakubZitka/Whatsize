@@ -87,7 +87,10 @@ class _BrandListScreenState extends State<BrandListScreen> {
                     final b = visible[i];
                     return ListTile(
                       title: Text(b['brand_name'] as String),
-                      subtitle: Text(_segmentName(b['segment'] as String?)),
+                      subtitle: Text(
+                        '${_segmentName(b['segment'] as String?)} · '
+                        '${b['data_source'] == 'publisher_size_guide' ? 'tabulka od značky' : 'odvozeno z normy'}',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                         builder: (_) => BrandScreen(
@@ -123,5 +126,13 @@ String _segmentName(String? segment) => const {
       'lingerie': 'Spodní prádlo',
       'menswear': 'Pánská móda',
       'basics': 'Základní oblečení',
+      'mid': 'Střední třída',
+      'premium_mid': 'Prémiová',
+      'online_mid': 'Online',
+      'online_fast_fashion': 'Online rychlá móda',
+      'youth_fast_fashion': 'Rychlá móda',
+      'footwear_first': 'Obuv',
+      'menswear_formal': 'Pánská móda',
+      'functional_baselayer': 'Funkční prádlo',
     }[segment] ??
     (segment ?? '');

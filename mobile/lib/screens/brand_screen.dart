@@ -160,6 +160,8 @@ class _ResultCard extends StatelessWidget {
     final fit = result['fit_code'] as String?;
     final warnings = (result['warnings'] as List).cast<Map>();
     final notes = (result['notes'] as List).cast<String>();
+    final also = (result['also'] as Map?) ?? const {};
+    final source = result['source'] as Map?;
     return [
       Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -176,6 +178,11 @@ class _ResultCard extends StatelessWidget {
             ),
         ],
       ),
+      if (also.isNotEmpty)
+        Text(
+          'Též: ${also.entries.map((e) => '${systemPrefix(e.key as String)} ${e.value}'.trim()).join(', ')}',
+          style: theme.textTheme.bodyMedium,
+        ),
       if (runnerUp != null)
         Text('Jsi na hranici — zvaž i $runnerUp.', style: theme.textTheme.bodyMedium),
       const SizedBox(height: 8),
@@ -205,6 +212,18 @@ class _ResultCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(n, style: theme.textTheme.bodySmall),
         ),
+      if (source != null && source['type'] == 'publisher_size_guide')
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(_sourceLine(source), style: theme.textTheme.bodySmall),
+        ),
     ];
   }
+}
+
+/// Market codes are short ("CZ", "DE"); longer values are harvest notes, not shown here.
+String _sourceLine(Map source) {
+  final market = source['market'] as String?;
+  final suffix = market != null && market.length <= 6 ? ' ($market)' : '';
+  return 'Podle tabulky velikostí značky$suffix.';
 }

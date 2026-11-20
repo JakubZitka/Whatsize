@@ -1,5 +1,7 @@
-"""Assemble every workbook table from the reference modules.
+"""Assemble every table of the size graph.
 
+Brands and charts come from the v3 harvested data (data/v3, via v3_import);
+the conversion and base tables are rendered from the standards module.
 build_dataset() is the single source for both the xlsx workbook
 (scripts/export_workbook.py) and the database seed (app.seed).
 """
@@ -10,15 +12,14 @@ from functools import lru_cache
 
 from app.reference import DATA_VERSION
 from app.reference import standards as s
-from app.reference.brands import build_brands
 from app.reference.catalog import (
     FIT_TYPES,
     GARMENT_CATEGORIES,
     MEASUREMENT_POINTS,
     SIZE_SYSTEMS,
 )
-from app.reference.charts import build_chart_rows
 from app.reference.fixtures import FIXTURES
+from app.reference.v3_import import load_v3
 
 
 def _base_women():
@@ -65,7 +66,7 @@ def _conv_footwear():
             "foot_length_mm": mm, "SHOE_MONDO": mm, "JP_cm": s.round_half(mm / 10),
             "SHOE_EU": s.round_half(s.foot_mm_to_eu(mm)), "SHOE_UK": uk,
             "SHOE_US_M": us_m, "SHOE_US_W": us_m + 1.5,
-            "note": "Generic retail equivalence. Brand charts override US offsets.",
+            "note": "Generic retail equivalence. Brand charts override it.",
         })
     return rows
 
@@ -84,33 +85,21 @@ def _conv_bra():
     return rows
 
 
-def _brand_rows(brands):
-    keep = ["brand_id", "brand_name", "parent_group", "country", "segment", "gender_focus",
-            "women_size_system", "men_size_system", "shirt_system", "bra_system",
-            "shoe_grid", "shoe_us_w_offset", "shoe_us_uk_offset", "website", "cee_presence",
-            "ingest_priority", "vanity_offset_waist_cm", "vanity_offset_source",
-            "publisher_guide_url"]
-    out = []
-    for b in brands:
-        row = {k: b[k] for k in keep}
-        row["categories"] = "|".join(b["categories"])
-        out.append(row)
-    return out
-
-
 @lru_cache(maxsize=1)
 def build_dataset() -> dict:
-    brands = build_brands()
+    v3 = load_v3()
     return {
         "version": DATA_VERSION,
-        "brands": brands,
+        "brands": v3["brands"],
         "tables": {
-            "dim_brand": _brand_rows(brands),
+            "dim_brand": v3["brands"],
             "dim_garment_category": GARMENT_CATEGORIES,
             "dim_measurement_point": MEASUREMENT_POINTS,
             "dim_size_system": SIZE_SYSTEMS,
             "dim_fit_type": FIT_TYPES,
-            "fact_brand_size_chart": build_chart_rows(brands),
+            "fact_brand_size_chart": v3["rows"],
+            "import_quarantine": v3["quarantine"],
+            "import_adjustments": v3["adjustments"],
             "ref_base_body_table_women": _base_women(),
             "ref_base_body_table_men": _base_men(),
             "ref_conv_women_tops": _conv_women(),

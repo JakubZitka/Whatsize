@@ -37,21 +37,39 @@ def _confidence(width: float, dim: str) -> float:
     return 0.3
 
 
-def _resolve_label(store: ChartStore, ref: dict, rows: list[dict]) -> dict | None:
-    """Find the chart row for a reference label, resolving a declared market (US-21)."""
-    label = str(ref["size_label"]).strip().upper()
+def _label_key(label: str) -> str:
+    """'M (US 38 / EU 48)' and 'm' both match a user typing 'M'."""
+    return str(label).split("(")[0].strip().casefold()
+
+
+def _resolve_label(store: ChartStore, ref: dict, fit: str) -> dict | None:
+    """Find the chart row for a reference label in any of the brand's size systems,
+    resolving a label bought in another market first (US-21)."""
+    brand_id, category_code = ref["brand_id"], ref["category_code"]
+    systems = store.systems(brand_id, category_code, fit)
+    label = _label_key(ref["size_label"])
     declared = ref.get("size_system")
-    brand_system = rows[0]["size_system"] if rows else None
-    if not declared or declared == brand_system:
-        return next((r for r in rows if r["size_label"].upper() == label), None)
-    gender = store.categories[ref["category_code"]]["gender"]
-    to_de = s.women_label_to_de if gender == "W" else s.men_label_to_de
-    offsets = s.WOMEN_NUMERIC_OFFSETS if gender == "W" else s.MEN_NUMERIC_OFFSETS
-    de = to_de(label, declared)
-    if de is None or brand_system not in offsets:
+    if declared and declared not in systems:
+        gender = store.categories[category_code]["gender"]
+        to_de = s.women_label_to_de if gender == "W" else s.men_label_to_de
+        offsets = s.WOMEN_NUMERIC_OFFSETS if gender == "W" else s.MEN_NUMERIC_OFFSETS
+        de = to_de(label, declared)
+        if de is None:
+            return None
+        for system in systems:
+            if system in offsets:
+                target = str(de + offsets[system])
+                row = next((r for r in store.chart(brand_id, category_code, fit, system)
+                            if _label_key(r["size_label"]) == target), None)
+                if row:
+                    return row
         return None
-    target = str(de + offsets[brand_system])
-    return next((r for r in rows if r["size_label"] == target), None)
+    for system in ([declared] if declared else systems):
+        row = next((r for r in store.chart(brand_id, category_code, fit, system)
+                    if _label_key(r["size_label"]) == label), None)
+        if row:
+            return row
+    return None
 
 
 def estimate(store: ChartStore, gender: str, references: list[dict]) -> dict:
@@ -64,15 +82,21 @@ def estimate(store: ChartStore, gender: str, references: list[dict]) -> dict:
         if verdict not in VERDICTS:
             verdict = "perfect"
         fit = ref.get("fit_code") or "regular"
-        rows = store.chart(brand_id, category_code, fit)
-        row = _resolve_label(store, ref, rows) if rows else None
+        if category_code not in store.brand_categories(brand_id):
+            problems.append(f"{brand_id} {category_code}: tuto kategorii značka nemá.")
+            continue
+        if fit not in store.fits(brand_id, category_code):
+            fit = "regular"
+        row = _resolve_label(store, ref, fit)
         if row is None:
             problems.append(f"{brand_id} {category_code} {ref['size_label']}: velikost neznáme.")
             continue
         brands_used.add(brand_id)
         cat = store.categories[category_code]
         primaries = cat["primary_dimension"].split("+")
-        offset = store.vanity_offset(brand_id, category_code)
+        offset = store.vanity_offset(brand_id, category_code,
+                                     store.chart(brand_id, category_code, fit,
+                                                 row["size_system"]))
         for dim in ("bust_chest_cm", "underbust_cm", "waist_cm", "hip_cm", "neck_cm",
                     "foot_length_mm"):
             lo, hi = row.get(f"{dim}_min"), row.get(f"{dim}_max")

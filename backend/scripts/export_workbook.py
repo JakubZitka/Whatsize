@@ -1,4 +1,4 @@
-"""Render the reference dataset as WhatSize_SizingDataModel_v1.xlsx.
+"""Render the reference dataset as WhatSize_SizingDataModel_v3.xlsx.
 
 Usage (from backend/):  python scripts/export_workbook.py [output.xlsx]
 The workbook is a view of app.reference — edit the generator, not the xlsx.
@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.reference.dataset import build_dataset  # noqa: E402
 from app.reference.quality import check_dataset  # noqa: E402
 
-DEFAULT_OUT = Path(__file__).resolve().parents[2] / "data" / "WhatSize_SizingDataModel_v1.xlsx"
+DEFAULT_OUT = Path(__file__).resolve().parents[2] / "data" / "WhatSize_SizingDataModel_v3.xlsx"
 
 FONT = Font(name="Arial", size=10)
 BOLD = Font(name="Arial", size=10, bold=True)
@@ -28,20 +28,21 @@ EDIT_FILL = PatternFill("solid", fgColor="FFF2CC")
 TITLE = Font(name="Arial", size=14, bold=True)
 
 # Columns the data team fills in during ingestion (highlighted in yellow).
-EDITABLE = {"publisher_guide_url", "verification_status", "confidence", "website",
-            "cee_presence"}
+EDITABLE = {"publisher_guide_url", "verification_status", "confidence", "harvest_status"}
 
 DESCRIPTIONS = {
-    "dim_brand": "Brand metadata, label systems, footwear grid and US offsets, CEE presence, "
-                 "calibrated vanity offset, ingestion priority.",
+    "dim_brand": "Brand metadata from v3: segment, primary size system, CEE presence, data "
+                 "source, harvest status and note, size-guide URL, calibrated vanity offset.",
     "dim_garment_category": "Categories with primary / secondary dimensions per gender "
                             "(EN 13402-2) and silhouette zone.",
     "dim_measurement_point": "Measurement vocabulary (ISO 8559-1 aligned) with how-to and "
                              "self-measurability.",
     "dim_size_system": "Every labelling system with its conversion rule and its traps.",
     "dim_fit_type": "Fit names with girth ease (cm), length delta and engine size shift.",
-    "fact_brand_size_chart": "Core table: brand x category x fit x size -> body measurement "
-                             "ranges [min, max).",
+    "fact_brand_size_chart": "Core table as served: brand x category x fit x size system x "
+                             "size -> body measurement ranges, with source and band type.",
+    "import_quarantine": "Charts withheld from recommendations on import, with the reason.",
+    "import_adjustments": "Every value the import derived or reshaped, with the rule used.",
     "ref_base_body_table_women": "Women's reference grid every chart is compared against.",
     "ref_base_body_table_men": "Men's reference grid every chart is compared against.",
     "ref_conv_women_tops": "Women's cross-system label lookup.",
@@ -87,6 +88,9 @@ def _cell(value):
 
 
 def _write_table(ws, rows):
+    if not rows:
+        ws.append(["(empty)"])
+        return
     headers = list(rows[0].keys())
     ws.append(headers)
     for row in rows:
@@ -122,30 +126,44 @@ def build_workbook(out: Path) -> dict:
     for name, rows in tables.items():
         _write_table(wb.create_sheet(name), rows)
 
+    rows = dataset["tables"]["fact_brand_size_chart"]
+    published = sum(r["source_type"] == "publisher_size_guide" for r in rows)
     lines = [
-        ("WhatSize — Sizing Data Model v1", TITLE),
-        (f"Data version: {dataset['version']}. Generated from backend/app/reference "
-         "(edit the generator, not this file).", FONT),
+        ("WhatSize — Sizing Data Model v3", TITLE),
+        (f"Data version: {dataset['version']}. Generated from the v3 data set "
+         "(backend/app/reference/data/v3) by scripts/export_workbook.py — edit the source "
+         "CSVs or the import rules, not this file.", FONT),
         ("", FONT),
-        ("PROVENANCE — read before using the numbers (PRD §8.5)", BOLD),
-        ("Measurement ranges are derived from EN 13402-3 intervals and documented regional "
-         "conversion rules. They are a structurally correct reference grid, not scraped "
-         "vendor data: no brand chart has been transcribed cell by cell.", FONT),
-        ("Every chart row therefore carries source_type = derived_from_standard and "
-         "confidence = low. Before launch every P1 brand must be re-ingested from its own "
-         "published guide and promoted to confidence = high.", FONT),
-        ("Brand websites and CEE presence are best-effort and unverified. Size-guide URLs "
-         "(publisher_guide_url) are empty until researched.", FONT),
-        ("Vanity offsets are seeded for Levi's, Wrangler, H&M and Lee only (PRD §8.6); "
-         "sources must be re-verified against the primary studies.", FONT),
+        ("PROVENANCE — read before using the numbers", BOLD),
+        (f"{published} of {len(rows)} chart rows come from brands' own published size guides "
+         "(source_type = publisher_size_guide); the rest are derived from EN 13402-3 for "
+         "brands whose guide could not be retrieved (derived_from_standard, confidence low).",
+         FONT),
+        ("measurement_basis 'unknown' means the brand's page does not say whether figures are "
+         "body or garment measurements. Garment-basis charts are quarantined, never served.",
+         FONT),
+        ("Published ranges are kept as published: some charts leave gaps between sizes or "
+         "overlap. The engine handles both; see band_type for how each range arose.", FONT),
+        ("Vanity offsets (Levi's, Wrangler, H&M, Lee — PRD §8.6) apply to "
+         "derived_from_standard charts only: a brand's own body chart already encodes them.",
+         FONT),
+        ("", FONT),
+        ("IMPORT RULES (see import_adjustments / import_quarantine)", BOLD),
+        ("A chart whose size ordinal restarts holds two tables: the second becomes the Plus "
+         "fit, or Tall / Petite for long and short suit series; otherwise it is quarantined.",
+         FONT),
+        ("A missing primary is read from the label only where the label is the measurement "
+         "(height, collar, waist in inches). Single published values become midpoint bands.",
+         FONT),
+        ("Children's shoes filed under K_ALL move to K_SHOES. The derived duplicate of "
+         "G-Star RAW is dropped in favour of the harvested record.", FONT),
         ("", FONT),
         ("CONVENTIONS", BOLD),
-        ("Bands are half-open: min inclusive, max exclusive, boundary at the midpoint "
-         "between consecutive sizes. All lengths in cm except foot length (mm).", FONT),
-        ("Body measurements are the canonical truth; size labels are derived views. There is "
-         "no 'eu_size' column — size_system names the scale (EU_DE vs EU_FR …).", FONT),
-        ("Header cells in dark gold mark columns the data team fills in during ingestion "
-         "(e.g. publisher_guide_url, verification_status, confidence).", FONT),
+        ("Body measurements are the canonical truth; size labels are derived views. All "
+         "lengths in cm except foot length (mm). size_system names the scale (EU_DE vs EU_FR…).",
+         FONT),
+        ("Header cells in dark gold mark columns the data team maintains (publisher_guide_url, "
+         "verification_status, confidence, harvest_status).", FONT),
         ("", FONT),
         ("SHEETS", BOLD),
     ]

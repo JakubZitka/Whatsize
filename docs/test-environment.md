@@ -20,7 +20,7 @@ jen změna API URL.
 2. Zkopírujte connection string a upravte schéma pro psycopg:
    `postgres://uzivatel:heslo@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`
    → `postgresql+psycopg://uzivatel:heslo@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require`
-3. Migrace a referenční data (100 značek, tabulky velikostí) se do databáze
+3. Migrace a referenční data (v3: 111 značek, tabulky velikostí) se do databáze
    nahrají samy při startu API (`WHATSIZE_AUTO_MIGRATE=true` v `render.yaml`).
    Nic se nespouští ručně. Kdyby databáze nebyla dostupná, API běží dál
    z dat zabudovaných v aplikaci — stav ukazuje `https://…/readyz`

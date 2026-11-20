@@ -1,0 +1,19 @@
+category_code,gender,display_name,primary_dimension,secondary_dimensions
+W_TOP,W,"Women's tops, blouses, knitwear",bust_chest_cm,"waist_cm,stature_cm"
+W_TOP_PLUS,W,Women's tops - plus range,bust_chest_cm,"waist_cm,hip_cm"
+W_DRESS,W,Women's dresses,bust_chest_cm,"waist_cm,hip_cm"
+W_OUTERWEAR,W,Women's coats and jackets,bust_chest_cm,"hip_cm,sleeve_cm"
+W_TROUSERS,W,Women's trousers and shorts,waist_cm,"hip_cm,inside_leg_cm"
+W_JEANS,W,Women's jeans,waist_cm,"hip_cm,inside_leg_cm"
+W_SKIRT,W,Women's skirts,waist_cm,hip_cm
+W_BRA,W,Bras and corsetry,underbust_cm,bust_chest_cm
+W_SWIMWEAR,W,Women's swimwear,bust_chest_cm,"underbust_cm,waist_cm,hip_cm"
+W_SHOES,W,Women's footwear,foot_length_mm,
+M_TOP,M,"Men's t-shirts, knitwear, polos",bust_chest_cm,"waist_cm,stature_cm"
+M_SHIRT,M,Men's shirts,neck_cm,"bust_chest_cm,sleeve_cm"
+M_OUTERWEAR,M,Men's coats and jackets,bust_chest_cm,sleeve_cm
+M_SUIT,M,Men's suits and blazers,bust_chest_cm,"waist_cm,hip_cm"
+M_TROUSERS,M,Men's trousers and shorts,waist_cm,"hip_cm,inside_leg_cm"
+M_JEANS,M,Men's jeans,waist_cm,"hip_cm,inside_leg_cm"
+M_SHOES,M,Men's footwear,foot_length_mm,
+K_ALL,K,Children's clothing,stature_cm,"bust_chest_cm,waist_cm"

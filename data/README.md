@@ -1,50 +1,57 @@
-# WhatSize sizing data model
+# WhatSize sizing data model — v3
 
-`WhatSize_SizingDataModel_v1.xlsx` is the companion workbook to the PRD (§8):
-100 brands, their size charts as body-measurement ranges, the dimension
-tables, cross-system conversions and the 8 golden test fixtures.
+| Where | What |
+|---|---|
+| `backend/app/reference/data/v3/*.csv` | **Source of truth**: brands, categories and size charts as harvested (v3). Shipped inside the API image. |
+| `data/v3/harvest_all_v3.json` | Raw values exactly as each brand published them, with the harvest notes — the audit trail. |
+| `data/v3/real_charts.json` | The harvested charts normalised per chart, before flattening into the CSV. |
+| `data/WhatSize_SizingDataModel_v3.xlsx` | Generated workbook: every table as served, plus the import report. Do not edit by hand. |
 
 ## Provenance
 
-The workbook is **generated**, not hand-edited. Its source of truth is
-`backend/app/reference/` — the same code seeds the database, so the
-workbook, the database and the engine cannot drift apart.
+- 74 brands have charts taken from their own published size guides
+  (`source_type = publisher_size_guide`); the rest are derived from EN 13402-3
+  (`derived_from_standard`, `confidence = low`) because their guide could not be
+  retrieved — `harvest_note` in `dim_brand` says why, brand by brand.
+- `measurement_basis = unknown` means the page does not say whether figures are
+  body or garment measurements. Garment-basis charts are **quarantined** (PRD §8.1:
+  conflating the two is wrong by a full size).
+- Published ranges are kept as published, including gaps between sizes and
+  overlaps; the engine handles both.
 
-- Measurement ranges are derived from EN 13402-3 intervals and documented
-  regional conversion rules. They are a structurally correct reference grid,
-  not transcribed vendor charts. Every chart row is therefore
-  `source_type = derived_from_standard`, `confidence = low` (PRD §8.5).
-- Brand websites and CEE presence are best-effort and unverified;
-  `publisher_guide_url` is empty until researched.
-- Vanity offsets are seeded for Levi's, Wrangler, H&M and Lee only (PRD §8.6),
-  with sources to re-verify.
+## Import rules (`backend/app/reference/v3_import.py`)
 
-| Sheet | Rows | PRD |
-|---|---|---|
-| dim_brand | 100 | 100 |
-| dim_garment_category | 17 | 17 |
-| dim_measurement_point | 25 | 25 |
-| dim_size_system | 25 | 25 |
-| dim_fit_type | 11 | 11 |
-| fact_brand_size_chart | 6 980 | 13 697 |
-| ref_base_body_table_women / _men | 13 + 12 | 25 |
-| ref_conv_* (4 sheets) | 142 | 142 |
-| test_fixtures | 8 | 8 |
+Every change is listed in the workbook's `import_adjustments` sheet and every
+withheld chart in `import_quarantine`, each with its reason:
 
-The chart row count differs from the PRD's original workbook because this
-grid is generated per brand size run; it is not padded to match.
+- A chart whose size ordinal restarts holds two tables: the second becomes the
+  **Plus** fit (Sinsay, Takko), or **Tall / Petite** for long and short suit
+  series (Blažek); otherwise it is quarantined.
+- A missing primary dimension is read from the label only where the label is the
+  measurement: height (`98/104`), collar (`39/40`), waist in inches (`W30`).
+- Single published values become bands at the midpoints to neighbouring sizes.
+- Children's shoes filed under `K_ALL` move to a `K_SHOES` category.
+- The derived duplicate `G-STAR RAW` (BR037) is dropped for the harvested
+  `G-Star RAW` (BR038).
+- Band-only bra tables (no cup) and charts with fewer than two usable sizes are
+  quarantined.
 
-## Regenerate
+Vanity offsets (Levi's, Wrangler, H&M, Lee — PRD §8.6) apply only to charts
+derived from the standard: a brand's own body chart already encodes its drift.
+
+## Regenerate the workbook
 
 ```bash
 cd backend
 pip install -e ".[dev]"
-python scripts/export_workbook.py      # writes data/WhatSize_SizingDataModel_v1.xlsx
+python scripts/export_workbook.py      # writes data/WhatSize_SizingDataModel_v3.xlsx
 ```
 
-The export refuses to write if any data-quality check fails (monotonicity,
-contiguity, duplicate labels, referential integrity, plausibility bounds,
-measurement_basis) — the same checks run in the test suite.
+The export refuses to write if a data-quality check fails — the same checks run
+in the test suite.
 
-Bumping `DATA_VERSION` in `backend/app/reference/__init__.py` makes every
-environment reload the seed on its next start.
+## Shipping a new data version
+
+Replace the CSVs in `backend/app/reference/data/v3/` (or add a `v4/` and point
+the import at it), bump `DATA_VERSION` in `backend/app/reference/__init__.py`,
+run the tests and push. Every environment reloads the seed on its next start.

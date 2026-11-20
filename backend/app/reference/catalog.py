@@ -10,55 +10,75 @@ DIMENSIONS = [
     "hip_cm",
     "neck_cm",
     "stature_cm",
+    "inside_leg_cm",
+    "sleeve_cm",
     "foot_length_mm",
 ]
+LENGTH_DIMENSIONS = ("stature_cm", "inside_leg_cm", "sleeve_cm")
 
 # --------------------------------------------------------------------------
-# dim_garment_category — the primary dimension is a function of
-# (category, gender), never a constant (PRD §8.1 principle 5, EN 13402-2).
+# dim_garment_category — codes, genders and primary / secondary dimensions come
+# from the v3 data set (data/v3/dim_garment_category.csv). The primary dimension
+# is a function of (category, gender), never a constant (PRD §8.1 principle 5).
+# Added here: the Czech display name and the engine's matching kind.
 # --------------------------------------------------------------------------
-GARMENT_CATEGORIES: list[dict] = [
-    # code, gender, name_en, name_cs, kind, primary, secondary, zone
-    ("W_TOPS", "W", "Tops & T-shirts", "Trička a topy", "w_upper",
-     "bust_chest_cm", "waist_cm|hip_cm|stature_cm", "torso"),
-    ("W_DRESSES", "W", "Dresses", "Šaty", "w_upper",
-     "bust_chest_cm", "waist_cm|hip_cm|stature_cm", "full"),
-    ("W_TROUSERS", "W", "Trousers", "Kalhoty", "w_lower",
-     "waist_cm", "hip_cm|stature_cm", "legs"),
-    ("W_JEANS", "W", "Jeans", "Džíny", "w_jeans",
-     "waist_cm", "hip_cm|stature_cm", "legs"),
-    ("W_SKIRTS", "W", "Skirts", "Sukně", "w_lower",
-     "waist_cm", "hip_cm", "legs"),
-    ("W_JACKETS", "W", "Jackets", "Bundy a saka", "w_upper",
-     "bust_chest_cm", "waist_cm|hip_cm|stature_cm", "torso"),
-    ("W_COATS", "W", "Coats", "Kabáty", "w_upper",
-     "bust_chest_cm", "waist_cm|hip_cm|stature_cm", "full"),
-    ("W_BRA", "W", "Bras", "Podprsenky", "bra",
-     "underbust_cm+bust_chest_cm", "", "torso"),
-    ("W_FOOTWEAR", "W", "Footwear", "Obuv", "foot",
-     "foot_length_mm", "", "feet"),
-    ("M_TOPS", "M", "Tops & T-shirts", "Trička a mikiny", "m_upper",
-     "bust_chest_cm", "waist_cm|stature_cm", "torso"),
-    ("M_SHIRTS", "M", "Shirts", "Košile", "m_shirt",
-     "neck_cm", "bust_chest_cm|stature_cm", "torso"),
-    ("M_TROUSERS", "M", "Trousers", "Kalhoty", "m_lower",
-     "waist_cm", "hip_cm|stature_cm", "legs"),
-    ("M_JEANS", "M", "Jeans", "Džíny", "m_jeans",
-     "waist_cm", "hip_cm|stature_cm", "legs"),
-    ("M_JACKETS", "M", "Jackets & suits", "Bundy a saka", "m_upper",
-     "bust_chest_cm", "waist_cm|stature_cm", "torso"),
-    ("M_COATS", "M", "Coats", "Kabáty", "m_upper",
-     "bust_chest_cm", "waist_cm|stature_cm", "full"),
-    ("M_FOOTWEAR", "M", "Footwear", "Obuv", "foot",
-     "foot_length_mm", "", "feet"),
-    ("K_ALL", "K", "Children's clothing", "Dětské oblečení", "kids",
-     "stature_cm", "", "full"),
-]
-GARMENT_CATEGORIES = [
-    dict(zip(["category_code", "gender", "name_en", "name_cs", "kind", "primary_dimension",
-              "secondary_dimensions", "silhouette_zone"], row, strict=True))
-    for row in GARMENT_CATEGORIES
-]
+_CATEGORY_EXTRA = {
+    "W_TOP": ("Trička, halenky a svetry", "w_upper", "torso"),
+    "W_TOP_PLUS": ("Trička a halenky — plus", "w_upper", "torso"),
+    "W_DRESS": ("Šaty", "w_upper", "full"),
+    "W_OUTERWEAR": ("Bundy a kabáty", "w_upper", "torso"),
+    "W_TROUSERS": ("Kalhoty a kraťasy", "w_lower", "legs"),
+    "W_JEANS": ("Džíny", "w_lower", "legs"),
+    "W_SKIRT": ("Sukně", "w_lower", "legs"),
+    "W_BRA": ("Podprsenky", "bra", "torso"),
+    "W_SWIMWEAR": ("Plavky", "w_upper", "torso"),
+    "W_SHOES": ("Obuv", "foot", "feet"),
+    "M_TOP": ("Trička, svetry a pola", "m_upper", "torso"),
+    "M_SHIRT": ("Košile", "m_shirt", "torso"),
+    "M_OUTERWEAR": ("Bundy a kabáty", "m_upper", "torso"),
+    "M_SUIT": ("Obleky a saka", "m_upper", "torso"),
+    "M_TROUSERS": ("Kalhoty a kraťasy", "m_lower", "legs"),
+    "M_JEANS": ("Džíny", "m_lower", "legs"),
+    "M_SHOES": ("Obuv", "foot", "feet"),
+    "K_ALL": ("Dětské oblečení", "kids", "full"),
+}
+
+
+def _load_categories() -> list[dict]:
+    import csv
+    from pathlib import Path
+
+    path = Path(__file__).parent / "data" / "v3" / "dim_garment_category.csv"
+    out = []
+    with path.open(encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            code = row["category_code"]
+            name_cs, kind, zone = _CATEGORY_EXTRA[code]
+            secondary = [d.strip() for d in row["secondary_dimensions"].split(",") if d.strip()]
+            primary = row["primary_dimension"]
+            if kind == "bra":
+                # Band and cup: underbust and bust together are the primary key.
+                primary = "underbust_cm+bust_chest_cm"
+                secondary = [d for d in secondary if d != "bust_chest_cm"]
+            out.append({
+                "category_code": code,
+                "gender": row["gender"],
+                "name_en": row["display_name"],
+                "name_cs": name_cs,
+                "kind": kind,
+                "primary_dimension": primary,
+                "secondary_dimensions": "|".join(secondary),
+                "silhouette_zone": zone,
+            })
+    return out
+
+
+GARMENT_CATEGORIES = _load_categories() + [{
+    # Added on import: the v3 data files children's shoes under K_ALL.
+    "category_code": "K_SHOES", "gender": "K", "name_en": "Children's footwear",
+    "name_cs": "Dětská obuv", "kind": "foot", "primary_dimension": "foot_length_mm",
+    "secondary_dimensions": "", "silhouette_zone": "feet",
+}]
 CATEGORY_BY_CODE = {c["category_code"]: c for c in GARMENT_CATEGORIES}
 
 # --------------------------------------------------------------------------
@@ -97,12 +117,14 @@ _MP = [
      "Fullest part of the calf."),
     ("head_girth", "Head girth", "Obvod hlavy", "girth", "cm", True, "",
      "Above the eyebrows and ears."),
-    ("inside_leg_length", "Inside leg length", "Vnitřní délka nohy", "length", "cm", True, "",
+    ("inside_leg_length", "Inside leg length", "Vnitřní délka nohy", "length", "cm", True,
+     "inside_leg_cm",
      "Crotch to floor, barefoot. Easier with a book pressed up as a marker."),
     ("outside_leg_length", "Outside leg length", "Vnější délka nohy", "length", "cm", False, "",
      "Side waist to floor."),
-    ("arm_length", "Arm length", "Délka paže", "length", "cm", False, "",
-     "Shoulder point over the bent elbow to the wrist — needs a second person."),
+    ("arm_length", "Arm length", "Délka paže", "length", "cm", False, "sleeve_cm",
+     "Shoulder point over the bent elbow to the wrist — needs a second person. Shirt "
+     "charts may measure sleeve from the centre back; see the brand note."),
     ("shoulder_width", "Shoulder width", "Šířka ramen", "width", "cm", False, "",
      "Across the back between the shoulder points."),
     ("back_width", "Back width", "Šířka zad", "width", "cm", False, "",
@@ -158,8 +180,21 @@ _SS = [
      "Neck girth in cm.", "Primary dimension for formal shirts is neck, not chest."),
     ("NECK_IN", "Shirt neck (inches)", "men shirts", "scalar",
      "Neck girth in inches, half sizes.", ""),
-    ("KIDS_HEIGHT", "Children by height", "children", "scalar",
-     "Label = stature in cm (6 cm steps).", "Age labels are proxies — height is the key."),
+    ("HEIGHT_CM", "Children by height", "children", "scalar",
+     "Label = stature in cm, sometimes a range such as 98/104.",
+     "Age labels are proxies — height is the key."),
+    ("MEN_EU_SUIT", "Men's suit sizes (EU)", "men suits & jackets", "scalar",
+     "Normal 44-60 = chest/2; short (24-30) and long (90-110) series follow.",
+     "Short and long series share girths with the normal size; stature differs."),
+    ("EU_TROUSER", "Men's trouser sizes (EU)", "men trousers", "scalar",
+     "Same numbers as suits for normal; 24-30 short, 90-118 long series.",
+     "A 25 is not a waist of 25 — it is a short-leg 50."),
+    ("MEN_IN", "Men's jeans waist (inches)", "men jeans", "scalar",
+     "Label = waist in inches; length is a separate choice.",
+     "Brands run large on the label (vanity sizing)."),
+    ("PROP", "Brand-proprietary labels", "any", "string",
+     "Labels with no standard meaning (e.g. '38+', age ranges); ranges are the brand's own.",
+     "Never convert arithmetically."),
     ("BRA_EU", "Bra EU (EN 13402)", "bras", "tuple",
      "Band = underbust rounded to 5 cm; cup = bust - underbust in 2 cm steps.",
      "Cup letters diverge from UK/US above D."),

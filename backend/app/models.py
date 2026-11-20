@@ -1,4 +1,4 @@
-"""Database schema. Mirrors the WhatSize_SizingDataModel_v1 workbook.
+"""Database schema. Mirrors the WhatSize_SizingDataModel_v3 workbook.
 
 Public / commodity layer (PRD §8.7): dimension, chart and reference tables.
 Private / proprietary layer: brand_calibration (vanity offsets) — never
@@ -45,6 +45,12 @@ class DimBrand(Base):
     ingest_priority = Column(String(4))
     publisher_guide_url = Column(String(512))
     categories = Column(Text)
+    primary_size_system = Column(String(16))
+    data_source = Column(String(32))
+    brand_confidence = Column(String(16))
+    harvest_status = Column(String(32))
+    harvest_note = Column(Text)
+    market_of_chart = Column(Text)
 
 
 class DimGarmentCategory(Base):
@@ -118,14 +124,21 @@ class FactBrandSizeChart(Base):
     stature_cm_max = Column(Float)
     foot_length_mm_min = Column(Float)
     foot_length_mm_max = Column(Float)
+    inside_leg_cm_min = Column(Float)
+    inside_leg_cm_max = Column(Float)
+    sleeve_cm_min = Column(Float)
+    sleeve_cm_max = Column(Float)
     inseam_options_in = Column(String(32))
+    band_type = Column(String(32))
+    market = Column(Text)
+    source_chart_id = Column(String(16))
     confidence = Column(String(8), nullable=False)
     source_type = Column(String(32), nullable=False)
     verification_status = Column(String(32), nullable=False)
     publisher_guide_url = Column(String(512))
     __table_args__ = (
-        UniqueConstraint("brand_id", "category_code", "fit_code", "size_label",
-                         name="uq_chart_label"),
+        UniqueConstraint("brand_id", "category_code", "fit_code", "size_system", "size_label",
+                         name="uq_chart_label_v3"),
         Index("ix_chart_lookup", "brand_id", "category_code", "fit_code"),
     )
 

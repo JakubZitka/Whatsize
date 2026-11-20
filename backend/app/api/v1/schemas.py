@@ -17,6 +17,8 @@ class Measurements(BaseModel):
     waist_cm: float | None = None
     hip_cm: float | None = None
     neck_cm: float | None = None
+    inside_leg_cm: float | None = None
+    sleeve_cm: float | None = None
     foot_length_mm: float | None = None
 
     def present(self) -> dict:

@@ -7,4 +7,4 @@ transcribed vendor charts — so every chart row carries confidence=low and
 source_type=derived_from_standard (PRD §8.5).
 """
 
-DATA_VERSION = "seed-v1.0"
+DATA_VERSION = "v3.0"

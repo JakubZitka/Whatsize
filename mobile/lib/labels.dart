@@ -32,6 +32,13 @@ const _hip = MeasurementField(
   'cm',
   'V nejširším místě sedu, nohy u sebe.',
 );
+const _insideLeg = MeasurementField(
+  'inside_leg_cm',
+  'Vnitřní délka nohy',
+  'cm',
+  'Bez bot, od rozkroku k zemi. Pomůže kniha přitisknutá nahoru jako značka. '
+      'Potřeba jen pro délku kalhot.',
+);
 
 const womenFields = [
   _stature,
@@ -49,6 +56,7 @@ const womenFields = [
   ),
   _waist,
   _hip,
+  _insideLeg,
   _foot,
 ];
 
@@ -68,6 +76,7 @@ const menFields = [
   ),
   _waist,
   _hip,
+  _insideLeg,
   _foot,
 ];
 
@@ -107,7 +116,11 @@ String systemPrefix(String? system) => const {
       'AU': 'AU',
       'NECK_CM': 'Límec',
       'NECK_IN': 'Límec (in)',
-      'KIDS_HEIGHT': 'Výška',
+      'HEIGHT_CM': 'Výška',
+      'MEN_EU_SUIT': 'EU',
+      'EU_TROUSER': 'EU',
+      'MEN_IN': 'W',
+      'WL': 'W',
       'BRA_EU': 'EU',
       'BRA_FR': 'FR',
       'BRA_IT': 'IT',
