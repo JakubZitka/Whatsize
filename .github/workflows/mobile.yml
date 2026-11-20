@@ -23,9 +23,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      # Pinned: an unpinned stable channel moved to 3.50, which deprecates
+      # package:flutter/material.dart and fails analyze. Bump deliberately.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.47.7
           cache: true
 
       # android/ and web/ platform folders are generated, not committed

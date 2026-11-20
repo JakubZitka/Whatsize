@@ -9,6 +9,8 @@ workflows:
     triggering:
       events: [pull_request]
     working_directory: mobile
+    environment:
+      flutter: 3.47.7
     scripts:
       - flutter pub get
       - flutter analyze
@@ -24,6 +26,7 @@ workflows:
         - pattern: main
     working_directory: mobile
     environment:
+      flutter: 3.47.7
       groups:
         - app_store_credentials   # APP_STORE_CONNECT_* variables
         - google_play_credentials # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
